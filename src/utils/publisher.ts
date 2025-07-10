@@ -1,9 +1,8 @@
 import { createReadStream, createWriteStream, existsSync } from 'fs';
-import { join, relative, dirname } from 'path';
+import { join, dirname } from 'path';
 import { createHash } from 'crypto';
 import archiver from 'archiver';
 import axios from 'axios';
-import FormData from 'form-data';
 import glob from 'glob';
 import { PublishOptions, PublishResult, ConnectorManifest } from '../types';
 import { loadManifest } from './manifest';
