@@ -29,7 +29,7 @@ for (const platform of platforms) {
   console.log(`Building ${outputName}...`);
   
   try {
-    execSync(`pkg dist/cli.js --target ${platform.target} --output ${outputPath}`, {
+    execFileSync('pkg', ['dist/cli.js', '--target', platform.target, '--output', outputPath], {
       stdio: 'inherit'
     });
     
