@@ -1,0 +1,129 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Automated Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Build package
+        run: npm run build
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 22
+          extra_plugins: |
+            @semantic-release/changelog@6.0.3
+            @semantic-release/git@10.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  build-binaries:
+    name: Build Release Binaries
+    runs-on: ${{ matrix.os }}
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            ext: ''
+          - os: windows-latest
+            platform: win
+            arch: x64
+            ext: '.exe'
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            ext: ''
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            ext: ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pkg globally
+        run: npm install -g pkg
+
+      - name: Build package
+        run: npm run build
+
+      - name: Create binary
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+          else
+            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+          fi
+        shell: bash
+
+      - name: Create archive
+        run: |
+          if [ "${{ matrix.platform }}" = "win" ]; then
+            7z a contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.zip contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+          else
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+              tar -czf contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+            else
+              tar -czf contextmesh-${{ matrix.platform }}.tar.gz contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+            fi
+          fi
+        shell: bash
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release.outputs.new_release_version }}
+          files: |
+            contextmesh-${{ matrix.platform }}*.zip
+            contextmesh-${{ matrix.platform }}*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

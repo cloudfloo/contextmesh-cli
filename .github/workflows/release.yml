@@ -1,0 +1,161 @@
+name: Manual Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Build package
+        run: npm run build
+
+      - name: Update version from tag
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
+
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  build-binaries:
+    name: Build Binaries
+    runs-on: ${{ matrix.os }}
+    needs: publish-npm
+    
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            ext: ''
+          - os: windows-latest
+            platform: win
+            arch: x64
+            ext: '.exe'
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            ext: ''
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            ext: ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install pkg globally
+        run: npm install -g pkg
+
+      - name: Build package
+        run: npm run build
+
+      - name: Create binary
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+          else
+            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+          fi
+        shell: bash
+
+      - name: Create archive
+        run: |
+          if [ "${{ matrix.platform }}" = "win" ]; then
+            7z a contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.zip contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+          else
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+              tar -czf contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
+            else
+              tar -czf contextmesh-${{ matrix.platform }}.tar.gz contextmesh-${{ matrix.platform }}${{ matrix.ext }}
+            fi
+          fi
+        shell: bash
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            contextmesh-${{ matrix.platform }}*.zip
+            contextmesh-${{ matrix.platform }}*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-package-managers:
+    name: Update Package Managers
+    runs-on: ubuntu-latest
+    needs: publish-npm
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Get package version
+        id: package-version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Wait for NPM propagation
+        run: sleep 60
+
+      - name: Create Homebrew formula PR
+        run: |
+          # This would typically be done via a separate workflow or external service
+          echo "Homebrew formula update would be triggered here for version ${{ steps.package-version.outputs.version }}"
+          
+      - name: Update package managers documentation
+        run: |
+          echo "Package managers documentation would be updated here"
