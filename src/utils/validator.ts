@@ -23,7 +23,6 @@ const mcpPackageSchema = {
     description: { type: 'string' },
     tools: {
       type: 'array',
-      minItems: 1,
       items: {
         type: 'object',
         required: ['name', 'description'],
