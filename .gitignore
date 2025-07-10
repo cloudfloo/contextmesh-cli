@@ -39,4 +39,4 @@ yarn-error.log*
 
 # Test artifacts
 test-results/
-junit.xml
+junit.xmlbinaries/
