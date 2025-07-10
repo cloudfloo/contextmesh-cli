@@ -63,12 +63,12 @@ for (const platform of platforms) {
     if (platform.target.includes('win')) {
       // Create ZIP for Windows
       const archiveName = `${platform.name}.zip`;
-      execSync(`cd ${binariesDir} && 7z a ${archiveName} ${binaryName}`, { stdio: 'inherit' });
+      execSync(`7z a ${archiveName} ${binaryName}`, { cwd: binariesDir, stdio: 'inherit' });
       console.log(`✅ Created ${archiveName}`);
     } else {
       // Create tar.gz for Unix-like systems
       const archiveName = `${platform.name}.tar.gz`;
-      execSync(`cd ${binariesDir} && tar -czf ${archiveName} ${binaryName}`, { stdio: 'inherit' });
+      execSync(`tar -czf ${archiveName} ${binaryName}`, { cwd: binariesDir, stdio: 'inherit' });
       console.log(`✅ Created ${archiveName}`);
     }
   } catch (error) {
