@@ -1,0 +1,67 @@
+{
+  "name": "@contextmesh/cli",
+  "version": "0.1.0",
+  "description": "CLI tool for ContextMesh - npm-like package manager for MCP connectors",
+  "main": "dist/index.js",
+  "bin": {
+    "contextmesh": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloudfloo/contextmesh-cli.git"
+  },
+  "keywords": [
+    "contextmesh",
+    "mcp",
+    "cli",
+    "package-manager",
+    "model-context-protocol"
+  ],
+  "author": "ContextMesh Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cloudfloo/contextmesh-cli/issues"
+  },
+  "homepage": "https://github.com/cloudfloo/contextmesh-cli#readme",
+  "dependencies": {
+    "ajv": "^8.12.0",
+    "archiver": "^6.0.1",
+    "axios": "^1.6.2",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "crypto": "^1.0.1",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10",
+    "js-yaml": "^4.1.0",
+    "ora": "^8.0.1",
+    "semver": "^7.5.4"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.2",
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/jest": "^29.5.11",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.5",
+    "@types/semver": "^7.5.6",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
