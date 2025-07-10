@@ -19,9 +19,8 @@
     "prepare": "npm run build",
     "prepack": "npm run build",
     "release": "npm run build && npm run test && npm run typecheck",
-    "commit": "git-cz",
     "semantic-release": "semantic-release",
-    "version:check": "semantic-release --dry-run"
+    "version:check": "semantic-release --dry-run --no-ci"
   },
   "repository": {
     "type": "git",

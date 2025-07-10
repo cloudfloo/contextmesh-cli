@@ -65,10 +65,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Check if version bump needed
         run: |
-          npx semantic-release --dry-run --no-ci
+          npm run version:check
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
