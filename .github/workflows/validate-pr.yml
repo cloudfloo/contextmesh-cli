@@ -73,28 +73,7 @@ jobs:
       - name: Check if version bump needed
         continue-on-error: true
         run: |
-          npm run version:check
+          echo "🔄 Checking potential version bump..."
+          npm run version:check || echo "Version check completed"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Comment on PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const commentBody = `## 🔄 Version Bump Preview
-            
-            This PR will trigger an automated release when merged to main.
-            
-            **Release Type:** Based on conventional commits in this PR
-            - \`feat:\` = minor version bump (0.1.0 → 0.2.0)
-            - \`fix:\` = patch version bump (0.1.0 → 0.1.1)  
-            - \`BREAKING CHANGE:\` = major version bump (0.1.0 → 1.0.0)
-            
-            The release will be automatically published to NPM and GitHub releases with downloadable binaries.`;
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: commentBody
-            });

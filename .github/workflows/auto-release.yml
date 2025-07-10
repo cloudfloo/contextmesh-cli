@@ -63,19 +63,15 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-            ext: ''
           - os: windows-latest
             platform: win
             arch: x64
-            ext: '.exe'
           - os: macos-latest
             platform: macos
             arch: x64
-            ext: ''
           - os: macos-latest
             platform: macos
             arch: arm64
-            ext: ''
     
     steps:
       - name: Checkout code
@@ -90,40 +86,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install pkg globally
-        run: npm install -g pkg
-
-      - name: Build package
-        run: npm run build
-
-      - name: Create binary
-        run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
-          else
-            pkg dist/cli.js --target node20-${{ matrix.platform }}-${{ matrix.arch }} --output contextmesh-${{ matrix.platform }}${{ matrix.ext }}
-          fi
-        shell: bash
-
-      - name: Create archive
-        run: |
-          if [ "${{ matrix.platform }}" = "win" ]; then
-            7z a contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.zip contextmesh-${{ matrix.platform }}${{ matrix.ext }}
-          else
-            if [ "${{ matrix.arch }}" = "arm64" ]; then
-              tar -czf contextmesh-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz contextmesh-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.ext }}
-            else
-              tar -czf contextmesh-${{ matrix.platform }}.tar.gz contextmesh-${{ matrix.platform }}${{ matrix.ext }}
-            fi
-          fi
-        shell: bash
+      - name: Build binary and archive
+        run: node scripts/build-binaries.js --platform=${{ matrix.platform }} --arch=${{ matrix.arch }}
 
       - name: Upload binary to release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.release.outputs.new_release_version }}
           files: |
-            contextmesh-${{ matrix.platform }}*.zip
-            contextmesh-${{ matrix.platform }}*.tar.gz
+            binaries/contextmesh-${{ matrix.platform }}*.zip
+            binaries/contextmesh-${{ matrix.platform }}*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

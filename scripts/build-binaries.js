@@ -1,20 +1,36 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const platforms = [
-  { target: 'node20-linux-x64', name: 'contextmesh-linux', ext: '' },
-  { target: 'node20-win-x64', name: 'contextmesh-win', ext: '.exe' },
-  { target: 'node20-macos-x64', name: 'contextmesh-macos', ext: '' },
-  { target: 'node20-macos-arm64', name: 'contextmesh-macos-arm64', ext: '' }
+  { target: 'node18-linux-x64', name: 'contextmesh-linux', ext: '', platform: 'linux', arch: 'x64' },
+  { target: 'node18-win-x64', name: 'contextmesh-win', ext: '.exe', platform: 'win', arch: 'x64' },
+  { target: 'node18-macos-x64', name: 'contextmesh-macos', ext: '', platform: 'macos', arch: 'x64' },
+  { target: 'node18-macos-arm64', name: 'contextmesh-macos-arm64', ext: '', platform: 'macos', arch: 'arm64' }
 ];
+
+// Parse command line arguments for CI use
+const args = process.argv.slice(2);
+const targetPlatform = args.find(arg => arg.startsWith('--platform='))?.split('=')[1];
+const targetArch = args.find(arg => arg.startsWith('--arch='))?.split('=')[1];
+const skipArchives = args.includes('--no-archives');
+
+// Filter platforms if specific target requested
+let platformsToBuild = platforms;
+if (targetPlatform && targetArch) {
+  platformsToBuild = platforms.filter(p => p.platform === targetPlatform && p.arch === targetArch);
+  if (platformsToBuild.length === 0) {
+    console.error(`❌ No platform found for ${targetPlatform}-${targetArch}`);
+    process.exit(1);
+  }
+}
 
 console.log('🔨 Building TypeScript...');
 execSync('npm run build', { stdio: 'inherit' });
 
-console.log('📦 Building binaries...');
+console.log(`📦 Building binaries for ${platformsToBuild.length} platform(s)...`);
 
 // Create binaries directory
 const binariesDir = path.join(__dirname, '..', 'binaries');
@@ -22,7 +38,7 @@ if (!fs.existsSync(binariesDir)) {
   fs.mkdirSync(binariesDir, { recursive: true });
 }
 
-for (const platform of platforms) {
+for (const platform of platformsToBuild) {
   const outputName = `${platform.name}${platform.ext}`;
   const outputPath = path.join(binariesDir, outputName);
   
@@ -47,10 +63,11 @@ for (const platform of platforms) {
 
 console.log('🎉 Binary building complete!');
 
-// Create archives
-console.log('📦 Creating archives...');
+// Create archives (skip if requested)
+if (!skipArchives) {
+  console.log('📦 Creating archives...');
 
-for (const platform of platforms) {
+  for (const platform of platformsToBuild) {
   const binaryName = `${platform.name}${platform.ext}`;
   const binaryPath = path.join(binariesDir, binaryName);
   
@@ -74,6 +91,11 @@ for (const platform of platforms) {
   } catch (error) {
     console.error(`❌ Error creating archive for ${binaryName}:`, error.message);
   }
+}
+
+  console.log('🎉 Archives created!');
+} else {
+  console.log('⏭️  Skipping archive creation');
 }
 
 console.log('🎉 All done!');
