@@ -58,11 +58,15 @@ describe('withRetry', () => {
     
     const promise = withRetry(fn, { maxAttempts: 3 });
     
-    // Run all timers for retries
-    await jest.runAllTimersAsync();
-    
-    await expect(promise).rejects.toThrow(error);
-    expect(fn).toHaveBeenCalledTimes(3);
+    try {
+      // Run all timers for retries
+      await jest.runAllTimersAsync();
+      await promise;
+      fail('Expected promise to reject');
+    } catch (e) {
+      expect(e).toBe(error);
+      expect(fn).toHaveBeenCalledTimes(3);
+    }
   });
 
   it('should use exponential backoff', async () => {

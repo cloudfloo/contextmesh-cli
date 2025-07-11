@@ -41,9 +41,9 @@ export async function withRetry<T>(
       // Calculate delay with exponential backoff
       let delay = baseDelay * Math.pow(factor, attempt - 1);
       
-      // Use retry-after header if available
-      if (error instanceof NetworkError && error.getRetryDelay) {
-        delay = error.getRetryDelay() * 1000; // Convert to milliseconds
+      // Use retry-after header if available (only override exponential backoff if explicitly set)
+      if (error instanceof NetworkError && error.details.retryAfter) {
+        delay = error.details.retryAfter * 1000; // Convert to milliseconds
       }
       
       // Cap at maximum delay

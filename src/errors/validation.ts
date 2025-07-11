@@ -16,7 +16,7 @@ export class ValidationError extends ContextMeshError {
 
   static fromAjvErrors(ajvErrors: any[], rawContent?: string): ValidationError {
     const errors = ajvErrors.map((error: any) => {
-      const path = error.instancePath || error.schemaPath || '/';
+      const path = error.instancePath || '/';
       let message = error.message || 'Unknown validation error';
       let suggestion: string | undefined;
 
@@ -29,7 +29,7 @@ export class ValidationError extends ContextMeshError {
           break;
         case 'pattern':
           message = `Invalid format: ${error.message}`;
-          suggestion = getPatternSuggestion(error.schemaPath, error.params);
+          suggestion = getPatternSuggestion(path);
           break;
         case 'enum':
           const allowedValues = error.params?.allowedValues;
@@ -114,7 +114,7 @@ function getSuggestionForError(error: any): string | undefined {
     return getRequiredPropertySuggestion(error.params?.missingProperty);
   }
   if (error.keyword === 'pattern' && error.path) {
-    return getPatternSuggestion(error.path, error.params);
+    return getPatternSuggestion(error.path);
   }
   if (error.keyword === 'format') {
     return getFormatSuggestion(error.params?.format);
@@ -139,7 +139,11 @@ function getRequiredPropertySuggestion(property: string): string {
   return suggestions[property] || `Add the required "${property}" property`;
 }
 
-function getPatternSuggestion(path: string, _params: any): string {
+function getPatternSuggestion(path: string): string {
+  if (!path || typeof path !== 'string') {
+    return 'Value must match the required pattern';
+  }
+  
   if (path.includes('/id') || path.includes('id')) {
     return 'Connector ID must contain only lowercase letters, numbers, and hyphens (e.g., "my-connector")';
   }

@@ -79,7 +79,7 @@ export function loadManifest(manifestPath: string): ConnectorManifest {
       });
     }
     if (error instanceof Error && 'code' in error) {
-      throw FileSystemError.fromNodeError(error as NodeJS.ErrnoException, manifestPath, 'read');
+      throw FileSystemError.fromNodeError(error as Error & { code?: string; path?: string }, manifestPath, 'read');
     }
     throw error;
   }

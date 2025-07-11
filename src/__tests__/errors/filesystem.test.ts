@@ -24,8 +24,8 @@ describe('FileSystemError', () => {
   });
 
   describe('fromNodeError', () => {
-    const createNodeError = (code: string, path?: string): NodeJS.ErrnoException => {
-      const error = new Error(`Mock ${code} error`) as NodeJS.ErrnoException;
+    const createNodeError = (code: string, path?: string): Error & { code?: string; path?: string } => {
+      const error = new Error(`Mock ${code} error`) as Error & { code?: string; path?: string };
       error.code = code;
       error.path = path;
       return error;

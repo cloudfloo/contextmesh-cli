@@ -1,7 +1,6 @@
 import { loadManifest, createManifestIfMissing } from '../../utils/manifest';
 import { FileSystemError } from '../../errors';
 import { existsSync, writeFileSync, readFileSync } from 'fs';
-import { join } from 'path';
 
 // Mock fs functions
 jest.mock('fs', () => ({
@@ -52,6 +51,7 @@ describe('loadManifest', () => {
     const error = (() => {
       try {
         loadManifest('/test/missing.json');
+        return null;
       } catch (e) {
         return e as FileSystemError;
       }
@@ -72,6 +72,7 @@ describe('loadManifest', () => {
     const error = (() => {
       try {
         loadManifest('/test/invalid.json');
+        return null;
       } catch (e) {
         return e as FileSystemError;
       }
@@ -87,7 +88,7 @@ describe('loadManifest', () => {
   it('should wrap Node.js file system errors', () => {
     mockExistsSync.mockReturnValue(true);
     
-    const fsError = new Error('Permission denied') as NodeJS.ErrnoException;
+    const fsError = new Error('Permission denied') as Error & { code?: string; path?: string };
     fsError.code = 'EACCES';
     fsError.path = '/test/protected.json';
     
@@ -102,6 +103,7 @@ describe('loadManifest', () => {
     const error = (() => {
       try {
         loadManifest('/test/protected.json');
+        return null;
       } catch (e) {
         return e as FileSystemError;
       }

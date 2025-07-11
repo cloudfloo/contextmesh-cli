@@ -11,7 +11,7 @@ export class FileSystemError extends ContextMeshError {
     super(message, 'FILESYSTEM_ERROR', details);
   }
 
-  static fromNodeError(error: NodeJS.ErrnoException, path?: string, operation?: string): FileSystemError {
+  static fromNodeError(error: Error & { code?: string; path?: string }, path?: string, operation?: string): FileSystemError {
     let message = 'File system operation failed';
     let suggestion: string | undefined;
 

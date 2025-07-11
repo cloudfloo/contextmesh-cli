@@ -89,7 +89,7 @@ function identifyAndWrapError(error: Error): ContextMeshError | null {
   if ('code' in error && typeof error.code === 'string') {
     const fsErrorCodes = ['ENOENT', 'EACCES', 'EISDIR', 'ENOTDIR', 'ENOSPC', 'EMFILE', 'EEXIST', 'EROFS'];
     if (fsErrorCodes.includes(error.code)) {
-      return FileSystemError.fromNodeError(error as NodeJS.ErrnoException);
+      return FileSystemError.fromNodeError(error as Error & { code?: string; path?: string });
     }
   }
 
