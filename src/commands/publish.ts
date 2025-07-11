@@ -5,7 +5,7 @@ import ora from 'ora';
 import { publishConnector } from '../utils/publisher';
 import { validateManifest } from '../utils/validator';
 import { createManifestIfMissing } from '../utils/manifest';
-import { handleError, isContextMeshError } from '../errors';
+import { handleError } from '../errors';
 
 export const publishCommand = new Command('publish')
   .description('Publish a connector to the ContextMesh registry')

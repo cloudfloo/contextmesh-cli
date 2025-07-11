@@ -1,4 +1,5 @@
 import { validateManifest } from '../utils/validator';
+import { ValidationError } from '../errors';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -109,8 +110,15 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('❌ Manifest validation failed'));
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
+      
+      try {
+        await validateManifest(manifestPath);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Missing required property: _contextmesh');
+        expect((error as ValidationError).details.field).toBe('root');
+      }
     });
     
     it('should fail on invalid connector ID with suggestion', async () => {
@@ -134,8 +142,16 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Invalid format'));
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
+      
+      try {
+        await validateManifest(manifestPath);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Invalid format');
+        expect((error as ValidationError).details.field).toBe('id');
+        expect((error as ValidationError).details.line).toBe(3); // Line where "id" appears
+      }
     });
     
     it('should fail on invalid version format', async () => {
@@ -159,7 +175,7 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
     });
 
     it('should fail on invalid email format', async () => {
@@ -187,7 +203,7 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
     });
 
     it('should fail on invalid URL format', async () => {
@@ -211,7 +227,7 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
     });
   });
 
@@ -232,7 +248,14 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Connector must define at least one tool');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
+      
+      try {
+        await validateManifest(manifestPath);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Connector must define at least one tool');
+      }
     });
 
     it('should fail on duplicate tool names', async () => {
@@ -260,7 +283,14 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, JSON.stringify(manifest));
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Duplicate tool names found: duplicate_tool');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
+      
+      try {
+        await validateManifest(manifestPath);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as ValidationError).message).toContain('Duplicate tool names found: duplicate_tool');
+      }
     });
 
     it('should warn on non-standard repository URL', async () => {
@@ -307,11 +337,16 @@ describe('Enhanced Manifest Validation', () => {
       const manifestPath = join(testDir, 'connector.mcp.json');
       writeFileSync(manifestPath, invalidManifest);
       
-      await expect(validateManifest(manifestPath)).rejects.toThrow('Manifest validation failed');
+      await expect(validateManifest(manifestPath)).rejects.toThrow(ValidationError);
       
-      // Check that error reporting includes helpful information
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('❌ Manifest validation failed'));
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Line'));
+      try {
+        await validateManifest(manifestPath);
+      } catch (error) {
+        expect(error).toBeInstanceOf(ValidationError);
+        const validationError = error as ValidationError;
+        expect(validationError.details.line).toBeDefined();
+        expect(validationError.details.field).toBeDefined();
+      }
     });
   });
 });

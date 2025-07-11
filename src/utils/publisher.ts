@@ -160,7 +160,9 @@ async function uploadToRegistry(
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw NetworkError.fromAxiosError(error, registryUrl);
+      // Use the actual request URL if available, otherwise fall back to registryUrl
+      const endpoint = error.config?.url || `${registryUrl}/v1/connectors`;
+      throw NetworkError.fromAxiosError(error, endpoint);
     }
     throw error;
   }

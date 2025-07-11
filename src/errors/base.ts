@@ -5,6 +5,7 @@ export interface ErrorDetails {
   column?: number;
   suggestion?: string;
   originalError?: Error;
+  [key: string]: any; // Allow additional properties
 }
 
 export class ContextMeshError extends Error {

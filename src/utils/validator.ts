@@ -134,7 +134,7 @@ function performSemanticValidation(manifest: ConnectorManifest): void {
   
   // Validate tool names are unique
   const toolNames = manifest.tools.map(tool => tool.name);
-  const duplicates = toolNames.filter((name, index) => toolNames.indexOf(name) !== index);
+  const duplicates = toolNames.filter((name: string, index: number) => toolNames.indexOf(name) !== index);
   if (duplicates.length > 0) {
     throw new ValidationError(`Duplicate tool names found: ${duplicates.join(', ')}`, {
       field: 'tools',

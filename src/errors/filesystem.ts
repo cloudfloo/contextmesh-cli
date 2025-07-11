@@ -1,5 +1,4 @@
 import { ContextMeshError, ErrorDetails } from './base';
-import { constants } from 'fs';
 
 export interface FileSystemErrorDetails extends ErrorDetails {
   path?: string;

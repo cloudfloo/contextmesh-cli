@@ -15,7 +15,7 @@ export class ValidationError extends ContextMeshError {
   }
 
   static fromAjvErrors(ajvErrors: any[], rawContent?: string): ValidationError {
-    const errors = ajvErrors.map(error => {
+    const errors = ajvErrors.map((error: any) => {
       const path = error.instancePath || error.schemaPath || '/';
       let message = error.message || 'Unknown validation error';
       let suggestion: string | undefined;
@@ -54,7 +54,8 @@ export class ValidationError extends ContextMeshError {
         path: path === '/' ? 'root' : path.replace(/^\//, ''),
         message,
         keyword: error.keyword,
-        params: error.params
+        params: error.params,
+        suggestion
       };
     });
 
@@ -67,7 +68,7 @@ export class ValidationError extends ContextMeshError {
         field: primaryError.path,
         line: lineInfo?.line,
         column: lineInfo?.column,
-        suggestion: getSuggestionForError(primaryError),
+        suggestion: primaryError.suggestion || getSuggestionForError(primaryError),
         validationErrors: errors
       }
     );
@@ -78,7 +79,7 @@ export class ValidationError extends ContextMeshError {
 
     if (this.details.validationErrors && this.details.validationErrors.length > 1) {
       output += '\n\nAdditional validation errors:';
-      this.details.validationErrors.slice(1).forEach((error, index) => {
+      this.details.validationErrors.slice(1).forEach((error: any, index: number) => {
         output += `\n${index + 2}. ${error.path}: ${error.message}`;
       });
     }
@@ -138,7 +139,7 @@ function getRequiredPropertySuggestion(property: string): string {
   return suggestions[property] || `Add the required "${property}" property`;
 }
 
-function getPatternSuggestion(path: string, params: any): string {
+function getPatternSuggestion(path: string, _params: any): string {
   if (path.includes('/id') || path.includes('id')) {
     return 'Connector ID must contain only lowercase letters, numbers, and hyphens (e.g., "my-connector")';
   }

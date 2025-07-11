@@ -52,7 +52,7 @@ export class NetworkError extends ContextMeshError {
           break;
         case 422:
           message = 'Validation error: Server rejected the request';
-          if (responseData?.detail) {
+          if (responseData && typeof responseData === 'object' && 'detail' in responseData) {
             message += `: ${responseData.detail}`;
           }
           break;
@@ -93,10 +93,12 @@ export class NetworkError extends ContextMeshError {
     }
 
     // Add response details if available
-    if (responseData?.detail && !message.includes(responseData.detail)) {
-      message += `: ${responseData.detail}`;
-    } else if (responseData?.message) {
-      message += `: ${responseData.message}`;
+    if (responseData && typeof responseData === 'object') {
+      if ('detail' in responseData && typeof responseData.detail === 'string' && !message.includes(responseData.detail)) {
+        message += `: ${responseData.detail}`;
+      } else if ('message' in responseData && typeof responseData.message === 'string') {
+        message += `: ${responseData.message}`;
+      }
     }
 
     return new NetworkError(message, {

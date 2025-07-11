@@ -5,7 +5,7 @@ export * from './network';
 export * from './auth';
 export * from './filesystem';
 
-import { ContextMeshError, isContextMeshError, wrapError } from './base';
+import { ContextMeshError, isContextMeshError } from './base';
 import { ValidationError } from './validation';
 import { NetworkError } from './network';
 import { AuthenticationError } from './auth';
