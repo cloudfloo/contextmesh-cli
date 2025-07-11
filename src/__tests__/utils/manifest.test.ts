@@ -1,6 +1,7 @@
 import { loadManifest, createManifestIfMissing } from '../../utils/manifest';
 import { FileSystemError } from '../../errors';
 import { existsSync, writeFileSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 // Mock fs functions
 jest.mock('fs', () => ({
@@ -157,8 +158,8 @@ describe('createManifestIfMissing', () => {
 
     const result = await createManifestIfMissing('/test/connector');
 
-    expect(result).toBe('/test/connector/connector.mcp.json');
-    expect(mockExistsSync).toHaveBeenCalledWith('/test/connector/connector.mcp.json');
+    expect(result).toBe(join('/test/connector', 'connector.mcp.json'));
+    expect(mockExistsSync).toHaveBeenCalledWith(join('/test/connector', 'connector.mcp.json'));
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
@@ -167,11 +168,11 @@ describe('createManifestIfMissing', () => {
 
     const result = await createManifestIfMissing('/test/my-awesome-connector');
 
-    expect(result).toBe('/test/my-awesome-connector/connector.mcp.json');
+    expect(result).toBe(join('/test/my-awesome-connector', 'connector.mcp.json'));
     expect(mockWriteFileSync).toHaveBeenCalled();
 
     const [path, content] = mockWriteFileSync.mock.calls[0];
-    expect(path).toBe('/test/my-awesome-connector/connector.mcp.json');
+    expect(path).toBe(join('/test/my-awesome-connector', 'connector.mcp.json'));
     
     const manifest = JSON.parse(content as string);
     expect(manifest.id).toBe('my-awesome-connector');
