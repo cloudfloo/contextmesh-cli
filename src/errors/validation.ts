@@ -5,7 +5,7 @@ export interface ValidationErrorDetails extends ErrorDetails {
     path: string;
     message: string;
     keyword?: string;
-    params?: any;
+    params?: Record<string, unknown>;
   }>;
 }
 
@@ -14,47 +14,48 @@ export class ValidationError extends ContextMeshError {
     super(message, 'VALIDATION_ERROR', details);
   }
 
-  static fromAjvErrors(ajvErrors: any[], rawContent?: string): ValidationError {
+  static fromAjvErrors(ajvErrors: unknown[], rawContent?: string): ValidationError {
     const errors = ajvErrors.map((error: any) => {
       const path = error.instancePath || '/';
       let message = error.message || 'Unknown validation error';
       let suggestion: string | undefined;
 
       // Enhance error messages
+      const params = error.params as Record<string, unknown> | undefined;
       switch (error.keyword) {
         case 'required':
-          const missingProp = error.params?.missingProperty;
+          const missingProp = params?.missingProperty;
           message = `Missing required property: ${missingProp}`;
-          suggestion = getRequiredPropertySuggestion(missingProp);
+          suggestion = getRequiredPropertySuggestion(missingProp as string);
           break;
         case 'pattern':
           message = `Invalid format: ${error.message}`;
-          suggestion = getPatternSuggestion(path);
+          suggestion = getPatternSuggestion(path as string);
           break;
         case 'enum':
-          const allowedValues = error.params?.allowedValues;
+          const allowedValues = params?.allowedValues as string[] | undefined;
           message = `Invalid value. Allowed values: ${allowedValues?.join(', ')}`;
           break;
         case 'format':
-          message = `Invalid ${error.params?.format} format`;
-          suggestion = getFormatSuggestion(error.params?.format);
+          message = `Invalid ${params?.format} format`;
+          suggestion = getFormatSuggestion(params?.format as string);
           break;
         case 'minItems':
-          message = `Array must have at least ${error.params?.limit} items`;
+          message = `Array must have at least ${params?.limit} items`;
           break;
         case 'maxItems':
-          message = `Array can have at most ${error.params?.limit} items`;
+          message = `Array can have at most ${params?.limit} items`;
           break;
         case 'type':
-          message = `Expected ${error.params?.type} but got ${typeof error.data}`;
+          message = `Expected ${params?.type} but got ${typeof error.data}`;
           break;
       }
 
       return {
-        path: path === '/' ? 'root' : path.replace(/^\//, ''),
+        path: path === '/' ? 'root' : (path as string).replace(/^\//, ''),
         message,
-        keyword: error.keyword,
-        params: error.params,
+        keyword: error.keyword as string,
+        params,
         suggestion
       };
     });
@@ -77,9 +78,10 @@ export class ValidationError extends ContextMeshError {
   format(verbose: boolean = false): string {
     let output = super.format(verbose);
 
-    if (this.details.validationErrors && this.details.validationErrors.length > 1) {
+    const validationErrors = this.details.validationErrors as Array<{ path: string; message: string }> | undefined;
+    if (validationErrors && validationErrors.length > 1) {
       output += '\n\nAdditional validation errors:';
-      this.details.validationErrors.slice(1).forEach((error: any, index: number) => {
+      validationErrors.slice(1).forEach((error, index) => {
         output += `\n${index + 2}. ${error.path}: ${error.message}`;
       });
     }
@@ -109,15 +111,15 @@ function findLineForPath(path: string, rawContent: string): { line: number; colu
   return null;
 }
 
-function getSuggestionForError(error: any): string | undefined {
+function getSuggestionForError(error: { keyword?: string; params?: Record<string, unknown>; path?: string }): string | undefined {
   if (error.keyword === 'required') {
-    return getRequiredPropertySuggestion(error.params?.missingProperty);
+    return getRequiredPropertySuggestion(error.params?.missingProperty as string);
   }
   if (error.keyword === 'pattern' && error.path) {
     return getPatternSuggestion(error.path);
   }
   if (error.keyword === 'format') {
-    return getFormatSuggestion(error.params?.format);
+    return getFormatSuggestion(error.params?.format as string);
   }
   return undefined;
 }

@@ -29,7 +29,7 @@ describe('NetworkError', () => {
   });
 
   describe('fromAxiosError', () => {
-    const createAxiosError = (status?: number, data?: any, code?: string, headers?: any): AxiosError => {
+    const createAxiosError = (status?: number, data?: unknown, code?: string, headers?: any): AxiosError => {
       const error = new Error('Request failed') as AxiosError;
       error.isAxiosError = true;
       error.code = code;

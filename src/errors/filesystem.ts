@@ -56,7 +56,7 @@ export class FileSystemError extends ContextMeshError {
 
     return new FileSystemError(message, {
       path: path || error.path,
-      operation: operation as any,
+      operation: operation as FileSystemErrorDetails['operation'],
       errorCode: error.code,
       suggestion,
       originalError: error
@@ -92,7 +92,7 @@ export class FileSystemError extends ContextMeshError {
       `Permission denied: Cannot ${operation} ${path}`,
       {
         path,
-        operation: operation as any,
+        operation: operation as FileSystemErrorDetails['operation'],
         errorCode: 'EACCES',
         suggestion: 'Check file permissions or run with appropriate privileges'
       }

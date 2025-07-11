@@ -5,7 +5,7 @@ export interface NetworkErrorDetails extends ErrorDetails {
   statusCode?: number;
   endpoint?: string;
   method?: string;
-  responseData?: any;
+  responseData?: unknown;
   retryable?: boolean;
   retryAfter?: number;
 }
@@ -138,13 +138,13 @@ export class NetworkError extends ContextMeshError {
    * Check if this error is potentially retryable
    */
   isRetryable(): boolean {
-    return this.details.retryable || false;
+    return (this.details.retryable as boolean) || false;
   }
 
   /**
    * Get suggested retry delay in seconds
    */
   getRetryDelay(): number {
-    return this.details.retryAfter || 5;
+    return (this.details.retryAfter as number) || 5;
   }
 }
