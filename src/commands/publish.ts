@@ -5,6 +5,7 @@ import ora from 'ora';
 import { publishConnector } from '../utils/publisher';
 import { validateManifest } from '../utils/validator';
 import { createManifestIfMissing } from '../utils/manifest';
+import { handleError } from '../errors';
 
 export const publishCommand = new Command('publish')
   .description('Publish a connector to the ContextMesh registry')
@@ -12,6 +13,7 @@ export const publishCommand = new Command('publish')
   .option('-r, --registry <url>', 'Registry URL', process.env.CONTEXTMESH_REGISTRY || 'https://api.contextmesh.io')
   .option('-t, --token <token>', 'Authentication token', process.env.CONTEXTMESH_TOKEN)
   .option('--dry-run', 'Perform a dry run without uploading')
+  .option('-v, --verbose', 'Show detailed error information')
   .action(async (directory: string, options) => {
     const spinner = ora();
     
@@ -59,8 +61,7 @@ export const publishCommand = new Command('publish')
       console.log(chalk.white(`  contextmesh install ${result.id}@${result.version}`));
       
     } catch (error) {
-      spinner.fail('Publication failed');
-      console.error(chalk.red(`\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-      process.exit(1);
+      spinner.fail('');
+      handleError(error, options.verbose);
     }
   });

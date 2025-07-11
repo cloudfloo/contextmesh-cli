@@ -2,6 +2,7 @@ import { existsSync, writeFileSync, readFileSync } from 'fs';
 import { join, basename } from 'path';
 import { ConnectorManifest } from '../types';
 import chalk from 'chalk';
+import { FileSystemError } from '../errors';
 
 export async function createManifestIfMissing(directory: string): Promise<string> {
   const manifestPath = join(directory, 'connector.mcp.json');
@@ -60,6 +61,26 @@ export async function createManifestIfMissing(directory: string): Promise<string
 }
 
 export function loadManifest(manifestPath: string): ConnectorManifest {
-  const content = readFileSync(manifestPath, 'utf-8');
-  return JSON.parse(content);
+  try {
+    if (!existsSync(manifestPath)) {
+      throw FileSystemError.fileNotFound(manifestPath);
+    }
+    const content = readFileSync(manifestPath, 'utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    if (error instanceof FileSystemError) {
+      throw error;
+    }
+    if (error instanceof SyntaxError) {
+      throw new FileSystemError(`Invalid JSON in manifest file: ${error.message}`, {
+        path: manifestPath,
+        operation: 'read',
+        suggestion: 'Check for syntax errors in your connector.mcp.json file'
+      });
+    }
+    if (error instanceof Error && 'code' in error) {
+      throw FileSystemError.fromNodeError(error as Error & { code?: string; path?: string }, manifestPath, 'read');
+    }
+    throw error;
+  }
 }

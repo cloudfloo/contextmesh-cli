@@ -7,12 +7,14 @@ import glob from 'glob';
 import { PublishOptions, PublishResult, ConnectorManifest } from '../types';
 import { loadManifest } from './manifest';
 import chalk from 'chalk';
+import { AuthenticationError, NetworkError, FileSystemError } from '../errors';
+import { withRetry } from './retry';
 
 export async function publishConnector(options: PublishOptions): Promise<PublishResult> {
   const { directory, registryUrl = 'https://api.contextmesh.io', token } = options;
   
   if (!token) {
-    throw new Error('Authentication token required. Set CONTEXTMESH_TOKEN environment variable or use --token flag.');
+    throw AuthenticationError.missingToken();
   }
   
   // Load and validate manifest
@@ -55,7 +57,9 @@ async function createZipArchive(directory: string, outputPath: string): Promise<
       resolve(checksum);
     });
     
-    archive.on('error', reject);
+    archive.on('error', (err) => {
+      reject(FileSystemError.cannotCreateZip(err.message));
+    });
     archive.on('data', (chunk) => hash.update(chunk));
     
     archive.pipe(output);
@@ -108,24 +112,37 @@ async function uploadToRegistry(
   };
   
   try {
-    // Step 1: Create connector metadata
-    const createResponse = await axios.post(
-      `${registryUrl}/v1/connectors`,
-      {
-        manifest: publishManifest,
-        readme: await loadReadme(dirname(zipPath))
+    // Step 1: Create connector metadata with retry
+    const createResponse = await withRetry(
+      async () => {
+        return await axios.post(
+          `${registryUrl}/v1/connectors`,
+          {
+            manifest: publishManifest,
+            readme: await loadReadme(dirname(zipPath))
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
       },
       {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        maxAttempts: 3,
+        onRetry: (attempt, error, delay) => {
+          console.log(chalk.yellow(`\n⟳ Retrying after ${delay / 1000}s (attempt ${attempt}/3)...`));
+          if (error instanceof NetworkError) {
+            console.log(chalk.gray(`  Reason: ${error.message}`));
+          }
         }
       }
     );
     
     const { id, version, upload_url } = createResponse.data;
     
-    // Step 2: Upload artifact to presigned URL
+    // Step 2: Upload artifact to presigned URL (no retry for uploads to avoid duplicates)
     if (upload_url) {
       const fileStream = createReadStream(zipPath);
       await axios.put(upload_url, fileStream, {
@@ -143,8 +160,9 @@ async function uploadToRegistry(
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      const message = error.response?.data?.detail || error.message;
-      throw new Error(`Registry error: ${message}`);
+      // Use the actual request URL if available, otherwise fall back to registryUrl
+      const endpoint = error.config?.url || `${registryUrl}/v1/connectors`;
+      throw NetworkError.fromAxiosError(error, endpoint);
     }
     throw error;
   }
