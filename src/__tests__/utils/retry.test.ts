@@ -53,16 +53,15 @@ describe('withRetry', () => {
   });
 
   it('should respect maxAttempts', async () => {
+    jest.useRealTimers(); // Use real timers for this test
+    
     const error = new NetworkError('Always fails', { retryable: true });
     const fn = jest.fn().mockRejectedValue(error);
     
-    const promise = withRetry(fn, { maxAttempts: 3 });
-    
-    // Let all timers complete
-    await jest.runAllTimersAsync();
-    
-    await expect(promise).rejects.toBe(error);
+    await expect(withRetry(fn, { maxAttempts: 3, baseDelay: 1 })).rejects.toBe(error);
     expect(fn).toHaveBeenCalledTimes(3);
+    
+    jest.useFakeTimers(); // Restore fake timers
   });
 
   it('should use exponential backoff', async () => {
