@@ -1,14 +1,27 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { publishCommand } from './commands/publish';
+
+function getPackageVersion(): string {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(join(__dirname, '..', 'package.json'), 'utf8')
+    );
+    return packageJson.version;
+  } catch {
+    return '0.1.0';
+  }
+}
 
 const program = new Command();
 
 program
   .name('contextmesh')
   .description('CLI tool for ContextMesh - npm-like package manager for MCP connectors')
-  .version('0.1.0');
+  .version(getPackageVersion());
 
 // Add commands
 program.addCommand(publishCommand);
